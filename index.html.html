@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel IoT - ESP32-S3 e DHT11</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #2c3e50; margin-bottom: 30px; }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            width: 260px;
+            text-align: center;
+        }
+        .card h3 { margin-top: 0; color: #34495e; }
+        .val {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2980b9;
+            margin: 15px 0;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-on { background-color: #27ae60; }
+        .btn-on:hover { background-color: #219653; }
+        .btn-off { background-color: #c0392b; }
+        .btn-off:hover { background-color: #a93226; }
+        .status-text { font-weight: bold; margin-bottom: 15px; display: block; }
+    </style>
+</head>
+<body>
+
+    <h1>Painel de Controle IoT - ESP32-S3</h1>
+
+    <div class="container">
+        <!-- CARD DE CONTROLE DO LED -->
+        <div class="card">
+            <h3>Controle do LED</h3>
+            <span id="statusLed" class="status-text">Sincronizando...</span>
+            <button id="btnLed" class="btn-on" onclick="toggleLed()">Ligar LED</button>
+        </div>
+
+        <!-- CARD DE TEMPERATURA -->
+        <div class="card">
+            <h3>Temperatura</h3>
+            <div class="val" id="tempVal">-- °C</div>
+            <p style="color: #7f8c8d; font-size: 14px;">Sensor DHT11</p>
+        </div>
+
+        <!-- CARD DE UMIDADE -->
+        <div class="card">
+            <h3>Umidade</h3>
+            <div class="val" id="umidVal">-- %</div>
+            <p style="color: #7f8c8d; font-size: 14px;">Sensor DHT11</p>
+        </div>
+    </div>
+
+    <!-- SDKs do Firebase (Versão 8 compatível com Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/database/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // --- CONFIGURAÇÃO DO FIREBASE ---
+        const firebaseConfig = {
+            databaseURL: "https://fereana-60625-default-rtdb.firebaseio.com/"
+        };
+
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let estadoLedAtual = 0;
+
+        // Função para alternar o estado do LED ao clicar no botão do site
+        function toggleLed() {
+            estadoLedAtual = estadoLedAtual === 1 ? 0 : 1;
+            db.ref('led').set(estadoLedAtual);
+        }
+
+        // Monitorar em tempo real o estado do LED no Firebase
+        db.ref('led').on('value', (snapshot) => {
+            const val = snapshot.val();
+            estadoLedAtual = val !== null ? val : 0;
+            const btn = document.getElementById('btnLed');
+            const txt = document.getElementById('statusLed');
+            
+            if (estadoLedAtual === 1) {
+                txt.innerText = "Status: LIGADO";
+                txt.style.color = "#27ae60";
+                btn.innerText = "Desligar LED";
+                btn.className = "btn-off";
+            } else {
+                txt.innerText = "Status: DESLIGADO";
+                txt.style.color = "#c0392b";
+                btn.innerText = "Ligar LED";
+                btn.className = "btn-on";
+            }
+        });
+
+        // Monitorar em tempo real a Temperatura enviada pelo ESP32-S3
+        db.ref('sensor/temperatura').on('value', (snapshot) => {
+            const temp = snapshot.val();
+            document.getElementById('tempVal').innerText = (temp !== null ? temp.toFixed(1) : "--") + " °C";
+        });
+
+        // Monitorar em tempo real a Umidade enviada pelo ESP32-S3
+        db.ref('sensor/umidade').on('value', (snapshot) => {
+            const umid = snapshot.val();
+            document.getElementById('umidVal').innerText = (umid !== null ? umid.toFixed(1) : "--") + " %";
+        });
+    </script>
+</body>
+</html>
