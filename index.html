@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de LED - ESP32 & Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            margin-top: 50px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+        }
+        .btn-on { background-color: #4CAF50; }
+        .btn-off { background-color: #f44336; }
+        #status { font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Controle do LED ESP32</h2>
+        <button class="btn-on" onclick="ligarLED()">Ligar LED</button>
+        <button class="btn-off" onclick="desligarLED()">Desligar LED</button>
+        <p id="status">Status atual: Carregando...</p>
+    </div>
+
+    <!-- Importação do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- Script direto na mesma página -->
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            databaseURL: "https://fereana-60625-default-rtdb.firebaseio.com"
+        };
+
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Funções para alterar o valor no Firebase
+        function ligarLED() {
+            database.ref('led').set(1)
+                .then(() => console.log("Comando enviado: 1"))
+                .catch(error => console.error("Erro:", error));
+        }
+
+        function desligarLED() {
+            database.ref('led').set(0)
+                .then(() => console.log("Comando enviado: 0"))
+                .catch(error => console.error("Erro:", error));
+        }
+
+        // Monitora em tempo real o estado do LED
+        const statusRef = database.ref('led');
+        statusRef.on('value', (snapshot) => {
+            const estado = snapshot.val();
+            const statusText = document.getElementById('status');
+            
+            if (estado === 1) {
+                statusText.innerText = "Status atual: LIGADO 🟢";
+                statusText.style.color = "green";
+            } else {
+                statusText.innerText = "Status atual: DESLIGADO 🔴";
+                statusText.style.color = "red";
+            }
+        });
+    </script>
+</body>
+</html>
